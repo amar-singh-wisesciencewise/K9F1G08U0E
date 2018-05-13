@@ -261,3 +261,74 @@ int ReadPage(char* const arr,int address){
 
 return  0;
 }
+
+
+int BlockErase(int Block){
+
+    unsigned int i = 0;
+
+    Block = (Block & 0x3FFU)<<6; //Row Address: lower 6 bits are for Page Number - not needed here.
+    //default state code
+    if(!READ_R_B)
+        return 1;
+
+    GPIODEN_K = 0; //making the IO lines high impedance
+
+    //taking the control signal to base state i.e.
+    CLE_CLR;
+    ALE_CLR;
+    RE_SET;
+    WE_SET;
+
+    if(!READ_R_B)
+        return 1;
+
+    GPIODIR_K = 0xFFU; //making all DATA pins Output
+    //default state code end
+
+    // 0x60 command latch
+    (*GPIODATA_K) = 0x60; // Erase Command start
+    CLE_SET;
+    WE_CLR;
+    GPIODEN_K = 0xFFU; //latching the above command onto the line
+    __asm(" NOP ");
+    WE_SET;
+    CLE_CLR;
+
+    //address latch
+    __asm(" NOP ");
+    __asm(" NOP ");
+    ALE_SET;
+    while(i<2){ //only Row Address
+        WE_CLR;
+        (*GPIODATA_K) = (Block >> (8*i)) & 0XFFU;
+        __asm(" NOP ");
+        WE_SET;
+        i++;
+    }
+    ALE_CLR;
+    //address latch end
+
+    __asm(" NOP ");
+    __asm(" NOP ");
+    CLE_SET;
+    WE_CLR;
+    (*GPIODATA_K) = 0xD0; // Erase Command latch
+    __asm(" NOP ");
+    WE_SET;
+    CLE_CLR;
+
+    GPIODEN_K = 0;
+    GPIODIR_K = 0; // making input for errors
+    GPIODEN_K = 0xFF;
+
+
+    while(!READ_R_B); //wait for erase to over
+
+    GPIODEN_K = 0;
+    GPIODIR_K = 0xFFU; // making output
+    //already: CLE_CLR;ALE_CLR;WE_SET;RE_SET;
+
+
+    return 0;
+}
