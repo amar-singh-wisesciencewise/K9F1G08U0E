@@ -51,7 +51,7 @@ extern int ReadID(int* const arr);
 extern int Reset();
 extern int WritePage(const char* const arr, unsigned int address );
 extern int ReadPage(char* const arr,int address);
-
+extern int BlockErase(int Block);
 
 
 #define ADDRESS(b,p) (((b&0x3FFU)<<22)|((p&0x3FU)<<16))
